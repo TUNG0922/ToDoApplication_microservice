@@ -1,5 +1,6 @@
 package com.springbootproject.todobackend.controller;
 
+import com.springbootproject.todobackend.model.Project;
 import com.springbootproject.todobackend.model.Task;
 import com.springbootproject.todobackend.repository.ProjectRepository;
 import com.springbootproject.todobackend.repository.UserRepository;
@@ -35,13 +36,16 @@ public class TaskController {
     // CREATE task
     @PostMapping
     public Task createTask(@RequestBody Task task) {
-        // Validate project
-        if (task.getProjectName() != null) {
-            projectRepository.findByName(task.getProjectName())
-                    .orElseThrow(() -> new IllegalArgumentException("Project not found: " + task.getProjectName()));
+        // Project name is required
+        if (task.getProjectName() == null || task.getProjectName().isEmpty()) {
+            throw new IllegalArgumentException("Project name is required to create a task.");
         }
 
-        // Validate assignee by name
+        // Validate that project exists
+        Project project = projectRepository.findByName(task.getProjectName())
+                .orElseThrow(() -> new IllegalArgumentException("Project not found: " + task.getProjectName()));
+
+        // Validate assignee by name (optional, if provided)
         if (task.getAssignee() != null && !task.getAssignee().isEmpty()) {
             boolean userExists = userRepository.existsByName(task.getAssignee());
             if (!userExists) {
@@ -49,7 +53,19 @@ public class TaskController {
             }
         }
 
-        return taskService.createTask(task);
+        // Ensure task stores project name
+        task.setProjectName(project.getName());
+
+        // Create the task
+        Task createdTask = taskService.createTask(task);
+
+        // Optionally update project assignee if task assignee is provided
+        if (task.getAssignee() != null && !task.getAssignee().isEmpty()) {
+            project.setAssignee(task.getAssignee());
+            projectRepository.save(project);
+        }
+
+        return createdTask;
     }
 
     // UPDATE task
