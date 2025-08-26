@@ -26,10 +26,21 @@ public class TaskController {
 
     // GET tasks, optionally filter by project name
     @GetMapping
-    public List<Task> getAllTasks(@RequestParam(required = false) String project) {
+    public List<Task> getAllTasks(
+            @RequestParam(required = false) String project,
+            @RequestParam(required = false) String assignee,
+            @RequestParam(required = false, name = "created_by") String createdBy) {
+
+        // If project, assignee, or createdBy filters are provided
         if (project != null && !project.isEmpty()) {
             return taskService.getTasksByProjectName(project);
+        } else if (assignee != null && !assignee.isEmpty()) {
+            return taskService.getTasksByAssignee(assignee);
+        } else if (createdBy != null && !createdBy.isEmpty()) {
+            return taskService.getTasksByCreatedBy(createdBy);
         }
+
+        // Default: return all tasks
         return taskService.getAllTasks();
     }
 
@@ -71,25 +82,45 @@ public class TaskController {
     // UPDATE task
     @PutMapping("/{id}")
     public Task updateTask(@PathVariable Long id, @RequestBody Task taskDetails) {
-        // Validate project
-        if (taskDetails.getProjectName() != null) {
+        // Fetch existing task
+        Task existingTask = taskService.getTaskById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + id));
+
+        // Update project if provided
+        if (taskDetails.getProjectName() != null && !taskDetails.getProjectName().isEmpty()) {
             projectRepository.findByName(taskDetails.getProjectName())
-                    .orElseThrow(() -> new IllegalArgumentException("Project not found: " + taskDetails.getProjectName()));
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Project not found: " + taskDetails.getProjectName()));
+            existingTask.setProjectName(taskDetails.getProjectName());
         }
 
-        // Validate assignee
+        // Update assignee by name
         if (taskDetails.getAssignee() != null && !taskDetails.getAssignee().isEmpty()) {
-            try {
-                Long assigneeId = Long.parseLong(taskDetails.getAssignee());
-                if (!userRepository.existsById(assigneeId)) {
-                    throw new IllegalArgumentException("Assignee not found with ID: " + assigneeId);
-                }
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid assignee ID: " + taskDetails.getAssignee());
+            boolean userExists = userRepository.existsByName(taskDetails.getAssignee());
+            if (!userExists) {
+                throw new IllegalArgumentException("Assignee not found: " + taskDetails.getAssignee());
             }
+            existingTask.setAssignee(taskDetails.getAssignee());
         }
 
-        return taskService.updateTask(id, taskDetails);
+        // Update status if provided
+        if (taskDetails.getStatus() != null && !taskDetails.getStatus().isEmpty()) {
+            existingTask.setStatus(taskDetails.getStatus());
+        }
+
+        // Update other fields
+        if (taskDetails.getTitle() != null) {
+            existingTask.setTitle(taskDetails.getTitle());
+        }
+        if (taskDetails.getDescription() != null) {
+            existingTask.setDescription(taskDetails.getDescription());
+        }
+        existingTask.setPriority(taskDetails.getPriority());
+        existingTask.setDeadline(taskDetails.getDeadline());
+        existingTask.setCreatedBy(taskDetails.getCreatedBy());
+
+        // Save updated task
+        return taskService.updateTask(id, existingTask);
     }
 
     // DELETE task

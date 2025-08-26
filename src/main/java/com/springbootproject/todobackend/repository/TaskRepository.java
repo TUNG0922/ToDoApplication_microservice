@@ -11,4 +11,6 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     // Use projectName (string) to filter tasks by project
     List<Task> findByProjectName(String projectName);
+    List<Task> findByAssignee(String assignee);
+    List<Task> findByCreatedBy(String createdBy);
 }
