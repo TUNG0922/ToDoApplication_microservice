@@ -37,7 +37,19 @@ public class TaskService {
         }
         return taskRepository.findByProjectName(projectName);
     }
+    public List<Task> getTasksByAssignee(String assignee) {
+        if (assignee == null || assignee.trim().isEmpty()) {
+            return getAllTasks();
+        }
+        return taskRepository.findByAssignee(assignee);
+    }
 
+    public List<Task> getTasksByCreatedBy(String createdBy) {
+        if (createdBy == null || createdBy.trim().isEmpty()) {
+            return getAllTasks();
+        }
+        return taskRepository.findByCreatedBy(createdBy);
+    }
     /**
      * Create a task and associate with a project by projectName.
      * If projectName is null, you can decide whether to throw or allow null project.
@@ -121,5 +133,8 @@ public class TaskService {
         entityManager.createNativeQuery(
                 "SELECT setval('tasks_id_seq', COALESCE((SELECT MAX(id) FROM tasks), 1), false)"
         ).getSingleResult();
+    }
+    public Optional<Task> getTaskById(Long id) {
+        return taskRepository.findById(id);
     }
 }
