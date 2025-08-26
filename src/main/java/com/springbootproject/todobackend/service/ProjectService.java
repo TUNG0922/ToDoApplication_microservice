@@ -3,7 +3,6 @@ package com.springbootproject.todobackend.service;
 import com.springbootproject.todobackend.model.Project;
 import com.springbootproject.todobackend.repository.ProjectRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -16,20 +15,26 @@ public class ProjectService {
         this.repo = repo;
     }
 
-    @Transactional
-    public Project createProject(String name) {
-        if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Project name must not be empty");
+    // Create project with name, assignee, createdBy
+    public Project createProject(String name, String createdBy) {
+        // Check for duplicate project name
+        if (repo.findByName(name).isPresent()) {
+            throw new IllegalArgumentException("Project already exists: " + name);
         }
-        if (repo.existsByName(name.trim())) {
-            throw new IllegalArgumentException("Project with the same name already exists");
-        }
-        Project p = new Project(name.trim());
-        return repo.save(p);
+
+        Project project = new Project();
+        project.setName(name);
+        project.setCreatedBy(createdBy); // set who created the project
+
+        return repo.save(project);
     }
 
-    @Transactional(readOnly = true)
+    // List all projects
     public List<Project> listProjects() {
         return repo.findAll();
+    }
+
+    public List<Project> listProjectsByUser(String username) {
+        return repo.findByCreatedByOrAssignee(username, username);
     }
 }

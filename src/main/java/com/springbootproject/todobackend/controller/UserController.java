@@ -56,4 +56,15 @@ public class UserController {
 
         return ResponseEntity.ok(response);
     }
+
+    // Get all users (for assignee dropdown)
+    @GetMapping("/users")
+    public ResponseEntity<?> getAllUsers() {
+        try {
+            return ResponseEntity.ok(userRepository.findAll());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to fetch users: " + e.getMessage());
+        }
+    }
 }
