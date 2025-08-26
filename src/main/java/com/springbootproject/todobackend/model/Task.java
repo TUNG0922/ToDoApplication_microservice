@@ -24,8 +24,10 @@ public class Task {
     @Column(name = "project_name")
     private String projectName;
 
-    // Getters and Setters
+    // Task status: Pending, Completed, or -
+    private String status = "-";
 
+    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -52,4 +54,7 @@ public class Task {
 
     public String getProjectName() { return projectName; }
     public void setProjectName(String projectName) { this.projectName = projectName; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }
